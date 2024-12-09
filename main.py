@@ -69,7 +69,7 @@ try:
 except Exception as e:
     print(f"Error: Ошибка создания базы данных: Исключение - {e}")
 
-DBSession = sessionmaker(binds=engine, expire_on_commit=False,)
+DBSession = sessionmaker(bind=engine, expire_on_commit=False,)
 
 @contextmanager
 def session_scope():
@@ -85,27 +85,40 @@ def session_scope():
         session.close()
 
 if __name__ == '__main__':
-    s = session_scope()
-    # Пример 1
-    # Хотим получить десять последних вопросов из определенного топика.
-    '''
-            SELECT *
-            FROM question
-            WHERE topic_id = 1
-            ORDER BY id DESC
-            LIMIT 10;
-    '''
+    # Создаем все таблицы в базе данных
+    Base.metadata.create_all(engine)
+    with session_scope() as s:
+        # Пример 1
+        # Хотим получить десять последних вопросов из определенного топика.
+        #    SELECT *
+        #    FROM question
+        #    WHERE topic_id = 1
+        #    ORDER BY id DESC
+        #    LIMIT 10;
         
     # Чтобы добиться такого запроса в алхимии:
 
-    t1_id = 1  # Заменить на id топика из вашего базы
+        t1_id = 1  # Заменить на id топика из вашего базы
 
-    #questions = s.query(Question).filter(
-    questions = s.select(Question).filter(
+        recs = s.query(Question).filter(
             Question.topic_id == t1_id,
-    ).order_by(Question.id.desc()).limit(10).all()        
+        ).order_by(Question.id.desc()).limit(10).all()        
 
-    print(f"Пример 1: {questions}")
+        print(f"Пример 1:")
+        for rec in recs:
+            print(rec.id, rec.text)
+        print("--------")
+
+        recs = s.query(Question).filter(
+            Question.topic_id == 1,
+            sa.or_(Question.text.ilike('%fart%'), Question.text.ilike('%dog%'))
+        ).all()
+
+        print(f"Пример 2:")
+        for rec in recs:
+            print(rec.id, rec.text)
+        print("--------")
+
 
 
 
